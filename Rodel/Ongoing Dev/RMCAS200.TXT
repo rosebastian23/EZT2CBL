@@ -28,7 +28,7 @@
 
        FD  FILEA-FIL
            RECORDING MODE IS V
-           RECORD IS VARYING IN SIZE FROM 1 TO 27990 CHARACTERS
+           RECORD IS VARYING IN SIZE FROM 8188 TO 27990 CHARACTERS
            LABEL RECORDS ARE STANDARD
            DATA RECORD IS FILEA-REC.
        01  FILEA-REC.
@@ -57,9 +57,9 @@
            05  ST-TYPE5              PIC X(1).
            05  ST-NAME5              PIC X(40).
            05  FILLER                PIC X(2907).
-           05  ST-BDAY               PIC X(8).
-           05  ST-BDAY-YR            REDEFINES ST-BDAY PIC X(4).
-           05  ST-BDAY-MD            REDEFINES ST-BDAY+4 PIC X(4).
+           05  ST-BDAY.
+               10  ST-BDAY-CCYY      PIC X(4).
+               10  ST-BDAY-MMDD      PIC X(4).
 
        FD  FILEB-FIL
            RECORDING MODE IS F
