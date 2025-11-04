@@ -1,0 +1,198 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. RMEEA350.
+       AUTHOR.            RODEL SEBASTIAN.
+       DATE-WRITTEN.      SEPTEMBER 30, 2025.
+       DATE-COMPILED.
+
+      *****************************************************************
+      *                    **HISTORY OF REVISIONS**                   *
+      *****************************************************************
+      *  CHGID        WHO         DATE        DESCRIPTION             *
+      *  -------- --------------  -------- ---------------------------*
+      *                                                               *
+      *****************************************************************
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT SAXTRI-FIL ASSIGN TO SAXTRI
+                  ORGANIZATION IS SEQUENTIAL
+                  FILE STATUS IS WS-FILE-STATUS.
+
+           SELECT TSITRI-FIL ASSIGN TO TSITRI
+              ORGANIZATION IS INDEXED
+              ACCESS MODE IS DYNAMIC
+              RECORD KEY IS TSITRI-KEY
+              FILE STATUS IS WS-TSI-STATUS.
+
+           SELECT RMELEFI-FIL ASSIGN TO RMELEFI
+              ORGANIZATION IS INDEXED
+              ACCESS MODE IS DYNAMIC
+              RECORD KEY IS RMELEFI-KEY
+              FILE STATUS IS WS-RME-STATUS.
+
+           SELECT RMEARO-FIL ASSIGN TO RMEARO
+              ORGANIZATION IS SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+
+       FD  SAXTRI-FIL
+           RECORD IS VARYING IN SIZE FROM 480  TO 32760 CHARACTERS
+           DATA RECORD IS SAXTRI-REC.
+
+       01  SAXTRI-REC.
+               10  FILLER                   PIC X(184).
+               10  SAXTRI-ELE-DET-AFT       PIC X(75).
+               10  SAXTRI-ELE-DET-AFT-REDEF
+                                 REDEFINES SAXTRI-ELE-DET-AFT.
+                   15 SAXTRI-ELE-DET-AFT30  PIC X(30).
+                   15 FILLER                PIC X(45).
+               10  SAXTRI-ELE-DET-BEF       PIC X(75).
+               10  SAXTRI-ELE-DET-BEF-REDEF
+                                 REDEFINES SAXTRI-ELE-DET-BEF.
+                   15 SAXTRI-ELE-DET-BEF30  PIC X(30).
+                   15 FILLER                PIC X(45).
+               10 SAXTRI-TRANCD         PIC X(8).
+               10 SAXTRI-TRANCD-ACT     PIC X(1).
+               10 SAXTRI-MAINT-TIME     PIC X(6).
+               10 SAXTRI-MAINT-DT       PIC X(8).
+               10 SAXTRI-TRAN-DT        PIC X(6).
+               10 SAXTRI-TRAN-TIME      PIC X(6).
+               10 SAXTRI-HIST-ELE-TYPE  PIC X(1).
+               10 SAXTRI-HIST-ELE-LGTH  PIC S9(4) COMP.
+               10 SAXTRI-HIST-ELE-ID    PIC X(8).
+               10 SAXTRI-CUST-CTL1      PIC 9(4).
+               10 SAXTRI-CUST-NBR       PIC 9(14).
+               10  SAXTRI-NAME1         PIC X(40).
+               10  SAXTRI-NAME1-REDEF REDEFINES SAXTRI-NAME1.
+                   15 SAXTRI-NAME122    PIC X(22).
+                   15 FILLER            PIC X(18).
+               10 FILLER                PIC X(3).
+               10 SAXTRI-ELE-DESC       PIC X(20).
+               10 FILLER                PIC X(2).
+               10 SAXTRI-MNT-CTL1       PIC X(2).
+               10 SAXTRI-MNT-CTL2       PIC X(3).
+               10  SAXTRI-EMP-ID        PIC X(8).
+               10  SAXTRI-EMP-ID-REDEF REDEFINES SAXTRI-EMP-ID.
+                   15 SAXTRI-EMP-ID4    PIC X(4).
+                   15 FILLER            PIC X(4).
+               10  SAXTRI-PHY-LOC       PIC X(4).
+               10  SAXTRI-PHY-LOC-REDEF REDEFINES SAXTRI-PHY-LOC.
+                   15 FILLER            PIC X(1).
+                   15 SAXTRI-PHY-LOC3   PIC X(3).
+
+       FD  TSITRI-FIL
+            RECORD CONTAINS 342 CHARACTERS
+            BLOCK CONTAINS 0 RECORDS.
+       01  TSITRI-REC.
+           05 FILLER                PIC X(4).
+           05 TSITRI-KEY            PIC X(4).
+           05 FILLER                PIC X(54).
+           05 TSITRI-PHY-LOC        PIC X(4).
+
+       FD  RMELEFI-FIL
+            RECORD CONTAINS 8 CHARACTERS
+            BLOCK CONTAINS 0 RECORDS.
+       01  RMELEFI-REC.
+           05 RMELEFI-KEY           PIC X(8).
+
+       FD  RMEARO-FIL
+           RECORD CONTAINS 135 CHARACTERS.
+       01  RMEARO-REC.
+           05 RMEARO-CUST-NBR       PIC 9(14).
+           05 RMEARO-NAME           PIC X(22).
+           05 RMEARO-ELE-DESC       PIC X(20).
+           05 RMEARO-OLD-DATA       PIC X(30).
+           05 RMEARO-NEW-DATA       PIC X(30).
+           05 RMEARO-EMP-ID         PIC X(4).
+           05 RMEARO-TERM           PIC X(4).
+           05 RMEARO-BR-CODE        PIC X(4).
+           05 RMEARO-TRAN-TIME      PIC X(6).
+
+       WORKING-STORAGE SECTION.
+       01  WS-CTR          PIC 9(4) VALUE 0.
+       01  WS-FLAG         PIC X    VALUE 'N'.
+       01  WS-TSI-STATUS   PIC XX.
+       01  WS-RME-STATUS   PIC XX.
+       01  EOF-SW          PIC X    VALUE 'N'.
+       01  WS-FILE-STATUS  PIC XX.
+
+       PROCEDURE DIVISION.
+
+           PERFORM 1000-INITIAL-RTN THRU 1000-EXIT
+           DISPLAY 'STATUS AFTER INITIAL ROUTINE: ' WS-FILE-STATUS
+           PERFORM 3000-PROCESS-RTN THRU 3000-EXIT
+           DISPLAY 'STATUS AFTER PROCESS ROUTINE: ' WS-FILE-STATUS
+           PERFORM 5000-FINAL-RTN THRU 5000-EXIT
+           STOP RUN.
+
+       1000-INITIAL-RTN.
+           OPEN INPUT SAXTRI-FIL
+                I-O   TSITRI-FIL
+                I-O   RMELEFI-FIL
+                OUTPUT RMEARO-FIL
+           PERFORM READ-INPUT-RTN THRU READ-EXIT.
+       1000-EXIT.
+           EXIT.
+
+       READ-INPUT-RTN.
+           READ SAXTRI-FIL
+                AT END
+                   MOVE '10' TO WS-FILE-STATUS
+           END-READ.
+       READ-EXIT.
+           EXIT.
+
+       3000-PROCESS-RTN.
+           MOVE SAXTRI-CUST-NBR   TO RMEARO-CUST-NBR
+           MOVE SAXTRI-NAME122    TO RMEARO-NAME
+           MOVE SAXTRI-ELE-DESC   TO RMEARO-ELE-DESC
+           MOVE SAXTRI-ELE-DET-BEF30 TO RMEARO-OLD-DATA
+           MOVE SAXTRI-ELE-DET-AFT30 TO RMEARO-NEW-DATA
+           MOVE SAXTRI-EMP-ID4    TO RMEARO-EMP-ID
+           MOVE SAXTRI-PHY-LOC    TO RMEARO-TERM
+           MOVE SAXTRI-TRAN-TIME  TO RMEARO-TRAN-TIME
+
+           DISPLAY '      RMEARO-TERM : ' RMEARO-TERM
+           DISPLAY '   SAXTRI-PHY-LOC : ' SAXTRI-PHY-LOC
+           DISPLAY '   SAXTRI-NAME122 : ' SAXTRI-NAME122
+           DISPLAY 'SAXTRI-HIST-ELE-ID: ' SAXTRI-HIST-ELE-ID
+
+           PERFORM GET-BR THRU GET-BR-EXIT
+           PERFORM VALIDATE-ELE THRU VALIDATE-ELE-EXIT
+
+           IF WS-FLAG = 'Y'
+              WRITE RMEARO-REC
+           END-IF.
+       3000-EXIT.
+           EXIT.
+
+       5000-FINAL-RTN.
+           CLOSE SAXTRI-FIL TSITRI-FIL RMELEFI-FIL RMEARO-FIL.
+       5000-EXIT.
+           EXIT.
+
+       GET-BR.
+           MOVE SAXTRI-PHY-LOC TO TSITRI-KEY
+           READ TSITRI-FIL KEY IS TSITRI-KEY
+           IF WS-TSI-STATUS = '00'
+              MOVE TSITRI-PHY-LOC TO RMEARO-BR-CODE
+           ELSE
+              DISPLAY 'BR NOT FOUND - TERM: ' SAXTRI-PHY-LOC
+           END-IF.
+       GET-BR-EXIT.
+           EXIT.
+
+       VALIDATE-ELE.
+           MOVE SAXTRI-HIST-ELE-ID TO RMELEFI-KEY
+           READ RMELEFI-FIL KEY IS RMELEFI-KEY
+           IF WS-RME-STATUS = '00'
+              MOVE 'Y'  TO WS-FLAG
+           ELSE
+              MOVE 'N' TO WS-FLAG
+           END-IF.
+       VALIDATE-ELE-EXIT.
+           EXIT.
+

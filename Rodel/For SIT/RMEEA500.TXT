@@ -1,0 +1,265 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. RMEEA500.
+       AUTHOR.            RODEL SEBASTIAN.
+       DATE-WRITTEN.      SEPTEMBER 30, 2025.
+       DATE-COMPILED.
+
+      *****************************************************************
+      *                    **HISTORY OF REVISIONS**                   *
+      *****************************************************************
+      *  CHGID        WHO         DATE        DESCRIPTION             *
+      *  -------- --------------  -------- ---------------------------*
+      *                                                               *
+      *****************************************************************
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT RMEARI-FIL ASSIGN TO RMEARI.
+
+           SELECT F-RPRT ASSIGN TO SYS011-UR-1403-S.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  RMEARI-FIL
+           RECORD CONTAINS 135 CHARACTERS
+           LABEL RECORD STANDARD
+           DATA RECORD IS RMEARI-REC.
+
+       01  RMEARI-REC.
+           05 RMEARI-CUST-NBR      PIC 9(14).
+           05 RMEARI-NAME          PIC X(22).
+           05 RMEARI-ELE-DESC      PIC X(20).
+           05 RMEARI-OLD-DATA      PIC X(30).
+           05 RMEARI-NEW-DATA      PIC X(30).
+           05 RMEARI-EMP-ID        PIC X(4).
+           05 RMEARI-TERM          PIC X(4).
+           05 RMEARI-BR-CODE       PIC X(4).
+           05 RMEARI-TRAN-TIME     PIC X(6).
+
+       FD  F-RPRT
+           RECORD CONTAINS 132 CHARACTERS
+           RECORDING IS F
+           LABEL RECORDS ARE OMITTED
+           DATA RECORD IS PRINT-RPRT.
+
+       01  PRINT-RPRT                PIC X(132).
+
+       WORKING-STORAGE SECTION.
+       77  WS-FILE-STATUS          PIC XX.
+       77  WS-LN-CTR               PIC 9(2) VALUE ZERO.
+       77  MX-LN-CTR               PIC 9(2) VALUE 55.
+       77  WS-PG-CTR               PIC 9(4) VALUE ZERO.
+       77  WS-CTR                  PIC 9(13) VALUE ZERO.
+       77  TOT-CTR                 PIC 9(13) VALUE ZERO.
+       77  WS-BR-CTR               PIC 9(13) VALUE ZERO.
+       77  WS-FLAG                 PIC X     VALUE 'N'.
+       77  WS-BR-CODE              PIC X(4).
+       77  WS-PREV-BR-CODE         PIC X(4) VALUE SPACES.
+
+       01  WS-SYSDATE.
+           05  WS-CC               PIC X(2).
+           05  WS-YY               PIC X(2).
+           05  WS-MM               PIC X(2).
+           05  WS-DD               PIC X(2).
+
+       01  WS-REPORT.
+           05 BLANK-LINE           PIC X(132) VALUE SPACES.
+           05 HEADER1.
+               10 PRT-MM-DT1       PIC X(2).
+               10 FILLER           PIC X(1) VALUE '/'.
+               10 PRT-DD-DT1       PIC X(2).
+               10 FILLER           PIC X(1) VALUE '/'.
+               10 PRT-YY-DT1       PIC X(2).
+               10 FILLER           PIC X(34) VALUE SPACES.
+               10 FILLER           PIC X(28)
+                  VALUE 'LAND BANK OF THE PHILIPPINES'.
+               10 FILLER           PIC X(50) VALUE SPACES.
+               10 FILLER           PIC X(4) VALUE 'PAGE'.
+               10 FILLER           PIC X(3) VALUE SPACES.
+               10 PRT-PG-NO        PIC ZZZ9.
+               10 FILLER           PIC X(1) VALUE SPACES.
+
+           05 HEADER2.
+               10 FILLER           PIC X(42) VALUE SPACES.
+               10 FILLER           PIC X(28)
+                  VALUE 'NEW EMPLOYEE ACTIVITY REPORT'.
+               10 FILLER           PIC X(62) VALUE SPACES.
+
+           05 HEADER3.
+               10 FILLER           PIC X(50) VALUE SPACES.
+               10 FILLER           PIC X(5)
+                  VALUE 'AS OF'.
+               10 FILLER           PIC X(1) VALUE SPACES.
+               10 PRT-MM-DT2       PIC X(2).
+               10 FILLER           PIC X(1) VALUE '/'.
+               10 PRT-DD-DT2       PIC X(2).
+               10 FILLER           PIC X(1) VALUE '/'.
+               10 PRT-YY-DT2       PIC X(2).
+               10 FILLER           PIC X(70) VALUE SPACES.
+
+           05 HEADER4.
+               10 FILLER           PIC X(26)
+                  VALUE 'BRANCH CODE/LENDING UNIT :'.
+               10 FILLER           PIC X(2) VALUE SPACES.
+               10 PRT-BR-NO-1      PIC 9(4) VALUE ZERO.
+               10 FILLER           PIC X(98) VALUE SPACES.
+
+           05 HEADER5.
+               10 FILLER           PIC X(128) VALUE SPACES.
+               10 FILLER           PIC X(4) VALUE 'TERM'.
+
+           05 HEADER6.
+               10 FILLER           PIC X(1) VALUE SPACES.
+               10 FILLER           PIC X(12)
+                  VALUE 'CUSTOMER NO.'.
+               10 FILLER           PIC X(11) VALUE SPACES.
+               10 FILLER           PIC X(4)
+                  VALUE 'NAME'.
+               10 FILLER           PIC X(14) VALUE SPACES.
+               10 FILLER           PIC X(12)
+                  VALUE 'UPDATE FIELD'.
+               10 FILLER           PIC X(18) VALUE SPACES.
+               10 FILLER           PIC X(8) VALUE
+                   'OLD DATA'.
+               10 FILLER           PIC X(23) VALUE SPACES.
+               10 FILLER           PIC X(8) VALUE
+                   'NEW DATA'.
+               10 FILLER           PIC X(12) VALUE SPACES.
+               10 FILLER           PIC X(3) VALUE
+                   'EMP'.
+               10 FILLER           PIC X(3) VALUE SPACES.
+               10 FILLER           PIC X(2) VALUE
+                   'BR'.
+               10 FILLER           PIC X(1) VALUE SPACES.
+
+           05  DET-LINE-1.
+               10 PRT-CST-NO       PIC 9(14) VALUE ZERO.
+               10 FILLER           PIC X(1) VALUE SPACES.
+               10 PRT-NAME         PIC X(22) VALUE SPACES.
+               10 FILLER           PIC X(1) VALUE SPACES.
+               10 PRT-UPD-FLD      PIC X(22) VALUE SPACES.
+               10 FILLER           PIC X(1) VALUE SPACES.
+               10 PRT-OLD-DATA     PIC X(30) VALUE SPACES.
+               10 FILLER           PIC X(1) VALUE SPACES.
+               10 PRT-NEW-DATA     PIC X(30) VALUE SPACES.
+               10 FILLER           PIC X(1) VALUE SPACES.
+               10 PRT-EMP          PIC X(4) VALUE SPACES.
+               10 FILLER           PIC X(1) VALUE SPACES.
+               10 PRT-TERM         PIC X(4) VALUE SPACES.
+
+           05  DET-LINE-2.
+               10 FILLER           PIC X(128) VALUE SPACES.
+               10 PRT-BR-NO-2      PIC 9(4) VALUE ZERO.
+
+           05  FTR-LINE-1.
+               10 FILLER           PIC X(15)
+                  VALUE 'NO. OF RECORDS:'.
+               10 FILLER           PIC X(1) VALUE SPACES.
+               10 PRT-CTR          PIC Z,ZZZ,ZZZ,ZZZ,ZZ9.
+
+       PROCEDURE DIVISION.
+
+           PERFORM 1000-INITIAL-RTN THRU 1000-EXIT
+           PERFORM 3000-PROCESS-RTN THRU 3000-EXIT
+-                                   UNTIL WS-FILE-STATUS = '10'
+           PERFORM 5000-FINAL-RTN THRU 5000-EXIT
+           STOP RUN.
+
+       1000-INITIAL-RTN.
+           OPEN INPUT RMEARI-FIL
+                OUTPUT F-RPRT
+           INITIALIZE WS-REPORT
+           ACCEPT WS-SYSDATE FROM DATE YYYYMMDD
+           MOVE WS-MM TO PRT-MM-DT1
+           MOVE WS-DD TO PRT-DD-DT1
+           MOVE WS-YY TO PRT-YY-DT1
+           MOVE WS-MM TO PRT-MM-DT2
+           MOVE WS-DD TO PRT-DD-DT2
+           MOVE WS-YY TO PRT-YY-DT2
+           PERFORM READ-INPUT-RTN THRU READ-EXIT
+           PERFORM PRT-HEADER-RTN THRU PRT-HEADER-RTN-EXIT.
+       1000-EXIT.
+           EXIT.
+
+       READ-INPUT-RTN.
+           READ RMEARI-FIL
+               AT END MOVE '10' TO WS-FILE-STATUS
+           END-READ.
+       READ-EXIT.
+           EXIT.
+
+       PRT-HEADER-RTN.
+           MOVE 0 TO WS-LN-CTR
+           ADD 1 TO WS-PG-CTR
+           ADD 8 TO WS-LN-CTR
+           MOVE WS-PG-CTR TO PRT-PG-NO
+           WRITE PRINT-RPRT FROM HEADER1
+           WRITE PRINT-RPRT FROM HEADER2
+           WRITE PRINT-RPRT FROM HEADER3
+           WRITE PRINT-RPRT FROM BLANK-LINE
+           MOVE RMEARI-BR-CODE TO WS-BR-CODE
+           MOVE WS-BR-CODE TO PRT-BR-NO-1
+           WRITE PRINT-RPRT FROM HEADER4
+           WRITE PRINT-RPRT FROM BLANK-LINE
+           WRITE PRINT-RPRT FROM HEADER5
+           WRITE PRINT-RPRT FROM HEADER6.
+       PRT-HEADER-RTN-EXIT.
+           EXIT.
+
+       3000-PROCESS-RTN.
+           ADD 1 TO TOT-CTR
+           MOVE RMEARI-BR-CODE TO WS-BR-CODE
+           IF WS-PREV-BR-CODE NOT = SPACES
+              AND WS-BR-CODE NOT = WS-PREV-BR-CODE
+                 PERFORM PRINT-BR-TOTAL THRU PRINT-BR-TOTAL-EXIT
+                 PERFORM PRT-HEADER-RTN THRU PRT-HEADER-RTN-EXIT
+                 MOVE 0 TO WS-BR-CTR
+           END-IF
+           MOVE RMEARI-CUST-NBR  TO PRT-CST-NO
+           MOVE RMEARI-NAME      TO PRT-NAME
+           MOVE RMEARI-ELE-DESC  TO PRT-UPD-FLD
+           MOVE RMEARI-OLD-DATA  TO PRT-OLD-DATA
+           MOVE RMEARI-NEW-DATA  TO PRT-NEW-DATA
+           MOVE RMEARI-EMP-ID    TO PRT-EMP
+           MOVE RMEARI-TERM      TO PRT-TERM
+           MOVE RMEARI-BR-CODE   TO PRT-BR-NO-2
+           WRITE PRINT-RPRT FROM DET-LINE-1
+           PERFORM LN-CTR-CHECK THRU LN-CTR-CHECK-EXIT
+           ADD 1 TO WS-LN-CTR
+           WRITE PRINT-RPRT FROM DET-LINE-2
+           PERFORM LN-CTR-CHECK THRU LN-CTR-CHECK-EXIT
+           ADD 1 TO WS-LN-CTR
+           ADD 1 TO WS-BR-CTR
+           MOVE WS-BR-CODE TO WS-PREV-BR-CODE
+           PERFORM READ-INPUT-RTN THRU READ-EXIT.
+       3000-EXIT.
+           EXIT.
+
+       LN-CTR-CHECK.
+           IF WS-LN-CTR = MX-LN-CTR
+              PERFORM PRT-HEADER-RTN THRU PRT-HEADER-RTN-EXIT.
+       LN-CTR-CHECK-EXIT.
+           EXIT.
+
+       5000-FINAL-RTN.
+           PERFORM PRINT-BR-TOTAL THRU PRINT-BR-TOTAL-EXIT
+           PERFORM PRINT-GRAND-TOTAL THRU PRINT-GRAND-TOTAL-EXIT
+           CLOSE RMEARI-FIL F-RPRT.
+       5000-EXIT.
+           EXIT.
+
+       PRINT-BR-TOTAL.
+           MOVE WS-BR-CTR TO PRT-CTR
+           WRITE PRINT-RPRT FROM FTR-LINE-1 AFTER 3.
+       PRINT-BR-TOTAL-EXIT.
+           EXIT.
+
+       PRINT-GRAND-TOTAL.
+           MOVE TOT-CTR TO PRT-CTR
+           MOVE 'GRAND TOTAL RECORDS: ' TO FTR-LINE-1 (1:22)
+           WRITE PRINT-RPRT FROM FTR-LINE-1 AFTER 3.
+       PRINT-GRAND-TOTAL-EXIT.
+           EXIT.
+

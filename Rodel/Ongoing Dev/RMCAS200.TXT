@@ -1,0 +1,151 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. RMCAS200.
+       AUTHOR.            RODEL SEBASTIAN.
+       DATE-WRITTEN.      NOVEMBER 4, 2025.
+       DATE-COMPILED.
+
+      *****************************************************************
+      *                    **HISTORY OF REVISIONS**                   *
+      *****************************************************************
+      *  CHGID        WHO         DATE        DESCRIPTION             *
+      *  -------- --------------  -------- ---------------------------*
+      *                                                               *
+      *****************************************************************
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT FILEA-FIL ASSIGN TO FILEA
+                  ORGANIZATION IS SEQUENTIAL
+                  FILE STATUS IS WS-FILE-STATUS.
+
+           SELECT FILEB-FIL ASSIGN TO FILEB
+              ORGANIZATION IS SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+
+       FD  FILEA-FIL
+           RECORDING MODE IS V
+           RECORD IS VARYING IN SIZE FROM 1 TO 27990 CHARACTERS
+           LABEL RECORDS ARE STANDARD
+           DATA RECORD IS FILEA-REC.
+       01  FILEA-REC.
+           05  FILLER                PIC X(25).
+           05  RECID                 PIC X(1).
+           05  FILLER                PIC X(15).
+           05  ST-ACCTNO             PIC X(10).
+           05  ST-CTL1               PIC X(3).
+           05  FILLER                PIC X(62).
+           05  ST-BRANCH             PIC X(3).
+           05  FILLER                PIC X(16).
+           05  ST-STATUS             PIC X(2).
+           05  FILLER                PIC X(15).
+           05  ST-SYSTYP             PIC X(3).
+           05  FILLER                PIC X(126).
+           05  ST-TIN                PIC X(9).
+           05  FILLER                PIC X(2250).
+           05  ST-NAME               PIC X(30).
+           05  FILLER                PIC X(11).
+           05  ST-TYPE2              PIC X(1).
+           05  ST-NAME2              PIC X(40).
+           05  ST-TYPE3              PIC X(1).
+           05  ST-NAME3              PIC X(40).
+           05  ST-TYPE4              PIC X(1).
+           05  ST-NAME4              PIC X(40).
+           05  ST-TYPE5              PIC X(1).
+           05  ST-NAME5              PIC X(40).
+           05  FILLER                PIC X(2907).
+           05  ST-BDAY               PIC X(8).
+           05  ST-BDAY-YR            REDEFINES ST-BDAY PIC X(4).
+           05  ST-BDAY-MD            REDEFINES ST-BDAY+4 PIC X(4).
+
+       FD  FILEB-FIL
+           RECORDING MODE IS F
+           RECORD CONTAINS 228 CHARACTERS
+           LABEL RECORDS ARE STANDARD.
+       01  FILEB-REC.
+           05  ACCTNO                PIC X(10).
+           05  CTL1                  PIC X(3).
+           05  BRANCH                PIC X(3).
+           05  STATUS                PIC X(2).
+           05  TIN                   PIC X(9).
+           05  NAME                  PIC X(30).
+           05  ADDRESS               PIC X(40).
+           05  BDATE-MD              PIC X(4).
+           05  BDATE-YY              PIC X(4).
+           05  ADDRESS3              PIC X(40).
+           05  ADDRESS4              PIC X(40).
+           05  ADDRESS5              PIC X(40).
+           05  SYSTYP                PIC X(3).
+
+       WORKING-STORAGE SECTION.
+       01  WS-CTR          PIC 9(4) VALUE 0.
+       01  WS-FLAG         PIC X    VALUE 'N'.
+       01  EOF-SW          PIC X    VALUE 'N'.
+       01  WS-FILE-STATUS  PIC XX.
+
+       PROCEDURE DIVISION.
+
+           PERFORM 1000-INITIAL-RTN THRU 1000-EXIT
+           PERFORM 5000-PROCESS-RTN THRU 5000-EXIT
+-                                   UNTIL WS-FILE-STATUS = '10'
+           PERFORM 7000-FINAL-RTN THRU 7000-EXIT
+           STOP RUN.
+
+
+       1000-INITIAL-RTN.
+           OPEN INPUT FILEA-FIL
+                OUTPUT FILEB-FIL
+           PERFORM 3000-READ-INPUT-RTN THRU 3000-EXIT.
+       1000-EXIT.
+           EXIT.
+
+
+       3000-READ-INPUT-RTN.
+           READ FILEA-FIL
+                AT END MOVE '10' TO WS-FILE-STATUS
+           END-READ.
+       3000-EXIT.
+           EXIT.
+
+
+       5000-PROCESS-RTN.
+           IF 
+
+           END-IF
+           IF 
+
+           END-IF
+           EVALUATE RMRELI-APPL-ID
+              WHEN 'ST'
+                   MOVE RMRELI-CUST-NO       TO RMRELST-CUST-NO-ST
+                   MOVE RMRELI-CUST-ACCT-KEY TO RMRELST-CUST-ACCT-KEY-ST
+                   MOVE RMRELI-CUST-ACCT-NO  TO RMRELST-CUST-ACCT-NO-ST
+                   MOVE RMRELI-CUST-ACCT-NO1 TO RMRELST-CUST-ACCT-NO1-ST
+                   MOVE RMRELI-APPL-ID       TO RMRELST-APPL-ID-ST
+                   MOVE RMRELI-FROM-CD       TO RMRELST-FROM-CD-ST
+                   MOVE RMRELI-TO-CD         TO RMRELST-TO-CD-ST
+                   WRITE RMRELST-REC
+              WHEN 'IM'
+                   MOVE RMRELI-CUST-NO       TO RMRELIM-CUST-NO-IM
+                   MOVE RMRELI-CUST-ACCT-KEY TO RMRELIM-CUST-ACCT-KEY-IM
+                   MOVE RMRELI-CUST-ACCT-N   TO RMRELIM-CUST-ACCT-NO-IM
+                   MOVE RMRELI-CUST-ACCT-NO1 TO RMRELIM-CUST-ACCT-NO1-IM
+                   MOVE RMRELI-APPL-ID       TO RMRELIM-APPL-ID-IM
+                   MOVE RMRELI-FROM-CD       TO RMRELIM-FROM-CD-IM
+                   MOVE RMRELI-TO-CD         TO RMRELIM-TO-CD-IM
+                   WRITE RMRELIM-REC
+              WHEN OTHER
+                   CONTINUE
+           END-EVALUATE
+           PERFORM 3000-READ-INPUT-RTN THRU 3000-EXIT.
+       5000-EXIT.
+           EXIT.
+
+
+       7000-FINAL-RTN.
+           CLOSE FILEA-FIL FILEB-FIL.
+       7000-EXIT.
+           EXIT.

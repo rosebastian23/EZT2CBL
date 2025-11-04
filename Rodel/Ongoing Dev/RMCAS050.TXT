@@ -1,0 +1,158 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. RMCAS050.
+       AUTHOR.            RODEL SEBASTIAN.
+       DATE-WRITTEN.      NOVEMBER 3, 2025.
+       DATE-COMPILED.
+
+      *****************************************************************
+      *                    **HISTORY OF REVISIONS**                   *
+      *****************************************************************
+      *  CHGID        WHO         DATE        DESCRIPTION             *
+      *  -------- --------------  -------- ---------------------------*
+      *                                                               *
+      *****************************************************************
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT RMRELI-FIL ASSIGN TO RMRELI
+                  ORGANIZATION IS SEQUENTIAL
+                  FILE STATUS IS WS-FILE-STATUS.
+
+           SELECT RMRELST-FIL ASSIGN TO RMRELST
+              ORGANIZATION IS SEQUENTIAL.
+
+           SELECT RMRELIM-FIL ASSIGN TO RMRELIM
+              ORGANIZATION IS SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+
+       FD  RMRELI-FIL
+           RECORD CONTAINS 193 CHARACTERS
+           LABEL RECORDS ARE STANDARD
+           DATA RECORD IS RMRELI-REC.
+       01  RMRELI-REC.
+           05 RMRELI-FROM-CD          PIC X(2).
+           05 RMRELI-CUST-NO          PIC X(30).
+           05 RMRELI-TO-CD            PIC X(2).
+           05 FILLER                  PIC X(10).
+           05 RMRELI-CUST-ACCT-KEY.
+              10  RMRELI-CUST-ACCT-CTLS    PIC X(16).
+              10  RMRELI-CUST-ACCT-NO      PIC X(14).
+              10  RMRELI-CUST-ACCT-N REDEFINES RMRELI-CUST-ACCT-NO.
+                  15  FILLER                   PIC X(4).
+                  15  RMRELI-CUST-ACCT-NO1     PIC X(10).
+              10  FILLER                   PIC X(13).
+           05 FILLER                  PIC X(44).
+           05 RMRELI-APPL-ID          PIC X(2).
+
+       FD  RMRELST-FIL
+           RECORDING MODE IS V
+           RECORD IS VARYING IN SIZE FROM 93 TO 930 CHARACTERS
+           LABEL RECORDS ARE STANDARD.
+       01  RMRELST-REC.
+           05 RMRELST-CUST-NO-ST       PIC X(30).
+           05 RMRELST-CUST-ACCT-KEY.
+               10 RMRELST-CUST-ACCT-CTLS    PIC X(16).
+               10 RMRELST-CUST-ACCT-NO-ST   PIC X(14).
+               10 RMRELST-CUST-ACCT-N REDEFINES RMRELI-CUST-ACCT-NO-ST.
+                  15 FILLER                    PIC X(4).
+                  15 RMRELST-CUST-ACCT-NO1-ST  PIC X(10).
+               10 FILLER                    PIC X(13).
+           05 RMRELST-APPL-ID-ST       PIC X(32).
+           05 RMRELST-FROM-CD-ST       PIC X(2).
+           05 RMRELST-TO-CD-ST         PIC X(2).
+
+       FD  RMRELIM-FIL
+           RECORDING MODE IS V
+           RECORD IS VARYING IN SIZE FROM 93 TO 930 CHARACTERS
+           LABEL RECORDS ARE STANDARD.
+       01  RMRELIM-REC.
+           05 RMRELIM-CUST-NO-IM       PIC X(30).
+           05 RMRELIM-CUST-ACCT-KEY.
+               10 RMRELIM-CUST-ACCT-CTLS    PIC X(16).
+               10 RMRELIM-CUST-ACCT-NO-IM   PIC X(14).
+               10 RMRELIM-CUST-ACCT-N REDEFINES RMRELI-CUST-ACCT-NO-IM.
+                  15 FILLER                    PIC X(4).
+                  15 RMRELIM-CUST-ACCT-NO1-IM  PIC X(10).
+               10 FILLER                    PIC X(13).
+           05 RMRELIM-APPL-ID-IM       PIC X(32).
+           05 RMRELIM-FROM-CD-IM       PIC X(2).
+           05 RMRELIM-TO-CD-IM         PIC X(2).
+
+       WORKING-STORAGE SECTION.
+       01  WS-CTR          PIC 9(4) VALUE 0.
+       01  WS-FLAG         PIC X    VALUE 'N'.
+       01  EOF-SW          PIC X    VALUE 'N'.
+       01  WS-FILE-STATUS  PIC XX.
+
+       PROCEDURE DIVISION.
+
+           PERFORM 1000-INITIAL-RTN
+           DISPLAY 'RMRELI-FROM-CD : ' RMRELI-FROM-CD
+           DISPLAY 'RMRELI-CUST-NO : ' RMRELI-CUST-NO
+           DISPLAY 'RMRELI-CUST-ACCT-NO : ' RMRELI-CUST-ACCT-NO
+           DISPLAY 'RMRELI-CUST-ACCT-NO1 : ' RMRELI-CUST-ACCT-NO1
+           DISPLAY 'RMRELI-APPL-ID : ' RMRELI-APPL-ID
+           PERFORM 5000-PROCESS-RTN UNTIL WS-FILE-STATUS = '10'
+           PERFORM 7000-FINAL-RTN
+           STOP RUN.
+
+
+       1000-INITIAL-RTN.
+           OPEN INPUT RMRELI-FIL
+                OUTPUT RMRELST-FIL
+                       RMRELIM-FIL
+           PERFORM 3000-READ-INPUT-RTN.
+       1000-EXIT.
+           EXIT.
+
+
+       3000-READ-INPUT-RTN.
+           READ RMRELI-FIL
+                AT END MOVE '10' TO WS-FILE-STATUS
+           END-READ.
+       3000-EXIT.
+           EXIT.
+
+
+       5000-PROCESS-RTN.
+           IF RMRELI-CUST-ACCT-NO1 NOT NUMERIC
+              GO TO 5000-EXIT
+           END-IF
+           IF RMRELI-FROM-CD NOT = 'CS' OR RMRELI-FROM-CD NOT = 'AC'
+              GO TO 5000-EXIT
+           END-IF
+           EVALUATE RMRELI-APPL-ID
+              WHEN 'ST'
+                   MOVE RMRELI-CUST-NO       TO RMRELST-CUST-NO-ST
+                   MOVE RMRELI-CUST-ACCT-KEY TO RMRELST-CUST-ACCT-KEY-ST
+                   MOVE RMRELI-CUST-ACCT-NO  TO RMRELST-CUST-ACCT-NO-ST
+                   MOVE RMRELI-CUST-ACCT-NO1 TO RMRELST-CUST-ACCT-NO1-ST
+                   MOVE RMRELI-APPL-ID       TO RMRELST-APPL-ID-ST
+                   MOVE RMRELI-FROM-CD       TO RMRELST-FROM-CD-ST
+                   MOVE RMRELI-TO-CD         TO RMRELST-TO-CD-ST
+                   WRITE RMRELST-REC
+              WHEN 'IM'
+                   MOVE RMRELI-CUST-NO       TO RMRELIM-CUST-NO-IM
+                   MOVE RMRELI-CUST-ACCT-KEY TO RMRELIM-CUST-ACCT-KEY-IM
+                   MOVE RMRELI-CUST-ACCT-N   TO RMRELIM-CUST-ACCT-NO-IM
+                   MOVE RMRELI-CUST-ACCT-NO1 TO RMRELIM-CUST-ACCT-NO1-IM
+                   MOVE RMRELI-APPL-ID       TO RMRELIM-APPL-ID-IM
+                   MOVE RMRELI-FROM-CD       TO RMRELIM-FROM-CD-IM
+                   MOVE RMRELI-TO-CD         TO RMRELIM-TO-CD-IM
+                   WRITE RMRELIM-REC
+              WHEN OTHER
+                   CONTINUE
+           END-EVALUATE
+           PERFORM 3000-READ-INPUT-RTN.
+       5000-EXIT.
+           EXIT.
+
+
+       7000-FINAL-RTN.
+           CLOSE RMRELI-FIL RMRELST-FIL RMRELIM-FIL.
+       7000-EXIT.
+           EXIT.
